@@ -3,8 +3,10 @@
 # Update the system
 sudo apt update && sudo apt upgrade -y
 
-# Install Docker
-sudo apt install -y docker.io
+# Install Docker using official script to avoid conflicts
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
 
 # Start and enable Docker
 sudo systemctl start docker
@@ -18,14 +20,24 @@ sudo chmod +x /usr/local/bin/docker-compose
 git clone https://github.com/rida999/e-wallet.git
 cd e-wallet
 
+# Create .env file if it doesn't exist (you may need to set actual values)
+if [ ! -f .env ]; then
+    echo "Creating .env file. Please update with your actual database credentials."
+    cat > .env << EOF
+db_name=ewallet
+db_username=ewallet_user
+db_password=ewallet_password
+EOF
+fi
+
 # Pull the latest images from Docker Hub
-docker pull rida999/e-wallet-frontend:latest
-docker pull rida999/e-wallet-backend:latest
+sudo docker pull rida999/e-wallet-frontend:latest
+sudo docker pull rida999/e-wallet-backend:latest
 
 # Run the production compose file
-docker-compose -f docker-compose.prod.yml up -d
+sudo docker-compose -f docker-compose.prod.yml up -d
 
-# Optional: Install Nginx for reverse proxy if needed
+# Install Nginx for reverse proxy
 sudo apt install -y nginx
 
 # Configure Nginx (basic config for frontend on port 80)
@@ -56,4 +68,12 @@ sudo ln -s /etc/nginx/sites-available/e-wallet /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
+# Wait for services to be healthy
+echo "Waiting for services to start..."
+sleep 30
+
+# Check if containers are running
+sudo docker ps
+
 echo "Deployment completed. Access the app at http://16.170.214.112"
+echo "Note: You may need to update the .env file with your actual database credentials."
